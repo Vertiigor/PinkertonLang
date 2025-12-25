@@ -1,6 +1,5 @@
-﻿using PinkertonInterpreter.Grammar;
-
-namespace PinkertonInterpreter.Grammar.Statements
+﻿namespace PinkertonInterpreter.Grammar.Statements
 {
     internal record PrintStatement(Expression value) : Statement;
+    internal record PrintLnStatement(Expression value) : Statement;
 }

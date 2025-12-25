@@ -3,6 +3,7 @@ using Interpreter.Grammar.Statements;
 using PinkertonInterpreter.Grammar;
 using PinkertonInterpreter.Grammar.Expressions;
 using PinkertonInterpreter.Grammar.Statements;
+using System;
 
 namespace PinkertonInterpreter
 {
@@ -19,11 +20,37 @@ namespace PinkertonInterpreter
 
             Globals.Define("E", Math.E);
 
-            Globals.Define("sin", new Func<double, double>(Math.Sin));
-            Globals.Define("cos", new Func<double, double>(Math.Cos));
-            Globals.Define("tan", new Func<double, double>(Math.Tan));
-            Globals.Define("cot", new Func<double, double>(x => 1.0 / Math.Tan(x)));
-            Globals.Define("sqrt", new Func<double, double>(Math.Sqrt));
+            Globals.Define("sqrt",
+                new NativeFunction(1, args => Math.Sqrt(Convert.ToDouble(args[0]))));
+
+            Globals.Define("sin",
+                new NativeFunction(1, args => Math.Sin(Convert.ToDouble(args[0]))));
+
+            Globals.Define("cos",
+                new NativeFunction(1, args => Math.Cos(Convert.ToDouble(args[0]))));
+
+            Globals.Define("tan",
+                new NativeFunction(1, args => Math.Tan(Convert.ToDouble(args[0]))));
+
+            Globals.Define("cot",
+                new NativeFunction(1, args => 1.0 / Math.Tan(Convert.ToDouble(args[0]))));
+
+            Globals.Define("@num",
+                new NativeFunction(1, args => Convert.ToDouble(args[0])));
+
+            Globals.Define("@bool",
+                new NativeFunction(1, args => Convert.ToBoolean(args[0])));
+
+            Globals.Define("@str",
+                new NativeFunction(1, args => Convert.ToString(args[0])));
+
+            Globals.Define("?num",
+                new NativeFunction(1, args => double.TryParse(Convert.ToString(args), out _)));
+
+            //Globals.Define("@num", new Func<object, double>(Convert.ToDouble));
+            //Globals.Define("@str", new Func<object, string>(Convert.ToString));
+            //Globals.Define("@bool", new Func<object, bool>(Convert.ToBoolean));
+            //Globals.Define("?num", new Func<object, bool>(obj => double.TryParse(Convert.ToString(obj), out _)));
         }
 
         public object? Evaluate(Expression expr) => expr switch
@@ -38,6 +65,12 @@ namespace PinkertonInterpreter
 
             CallExpression call => Call(call),
 
+            ArrayLiteral(var elements) =>
+                elements.Select(Evaluate).ToList(),
+
+        IndexExpression(var target, var index) => GetByIndex(target, index),
+
+
             Unary(var op, var right) => EvaluateUnary(op, Evaluate(right)),
 
             Binary(var left, var op, var right) => op.Type switch
@@ -50,10 +83,25 @@ namespace PinkertonInterpreter
             _ => throw new Exception("Unknown expression")
         };
 
+        private object? GetByIndex(Expression target, Expression index)
+        {
+            var array = Evaluate(target) as List<object?>
+        ?? throw new Exception("Target is not an array");
+
+            var i = Convert.ToInt32(Evaluate(index));
+            return array[i];
+        }
+
         // Новый метод для Statement
         public object? Execute(Statement stmt) => stmt switch
         {
             PrintStatement(var p) => Print(p),
+
+            PrintLnStatement(var p) => PrintLn(p),
+
+            ReturnStatement(var value) =>
+                throw new ReturnException(value != null ? Evaluate(value) : null),
+
 
             InputStatement(var name) => Input(name),
 
@@ -69,6 +117,9 @@ namespace PinkertonInterpreter
             BreakStatement => throw new BreakException(),
 
             ContinueStatement => throw new ContinueException(),
+
+            FunctionStatement(var name, _, _) => Function(stmt as FunctionStatement, name),
+
 
             ExpressionStatement(var expr) => Evaluate(expr),
 
@@ -101,8 +152,15 @@ namespace PinkertonInterpreter
         {
             var value = Evaluate(p);
 
-            Console.WriteLine(value);
+            Console.Write(value);
 
+            return null;
+        }
+
+        private object? PrintLn(Expression p)
+        {
+            var value = Evaluate(p);
+            Console.WriteLine(value);
             return null;
         }
 
@@ -139,22 +197,29 @@ namespace PinkertonInterpreter
             return null;
         }
 
-        private object? Call(CallExpression expr)
+        private object? Call(CallExpression call)
         {
-            var callee = Evaluate(expr.Callee);
+            var callee = Evaluate(call.Callee);
 
-            var args = expr.Arguments
-                .Select(Evaluate)
-                .ToList();
+            if (callee is not ICallable function)
+                throw new Exception("Can only call functions.");
 
-            if (callee is Delegate fn)
-            {
-                return fn.DynamicInvoke(args.ToArray());
-            }
+            var args = call.Arguments.Select(Evaluate).ToList();
 
-            throw new Exception("Can only call functions");
+            if (args.Count != function.Arity())
+                throw new Exception("Wrong number of arguments.");
+
+            return function.Call(this, args);
         }
 
+
+
+        private object? Function(FunctionStatement stmt, Token token)
+        {
+            var function = new Function(stmt, _environment);
+            _environment.Define(token.Lexeme, function);
+            return null;
+        }
 
         private object? Assignment(Token name, Expression value)
         {

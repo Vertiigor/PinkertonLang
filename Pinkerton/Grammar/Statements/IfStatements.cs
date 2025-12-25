@@ -1,6 +1,4 @@
-﻿using PinkertonInterpreter.Grammar;
-
-namespace PinkertonInterpreter.Grammar.Statements
+﻿namespace PinkertonInterpreter.Grammar.Statements
 {
     internal record IfStatement(Expression Condition, Statement ThenBranch, Statement? ElseBranch) : Statement;
 }

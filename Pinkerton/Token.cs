@@ -3,7 +3,7 @@
     internal enum TokenType
     {
         // Single-character tokens
-        LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
+        LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE, LEFT_BRACKET, RIGHT_BRACKET,
         COMMA, DOT, MINUS, PLUS, SEMICOLON, SLASH, STAR, REMAINDER,
 
         // One or two character tokens
@@ -22,7 +22,7 @@
         NULL, AND, OR, TRUE, FALSE, NOT,
         ARRAY,
         RETURN, DO, PROCEDURE, BREAK, CONTINUE,
-        PRINT, INPUT,
+        PRINT, PRINTLN, INPUT,
 
         GROUP,
 

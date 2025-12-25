@@ -48,11 +48,14 @@
                 { "break", TokenType.BREAK },
                 { "again", TokenType.CONTINUE },
                 { "write", TokenType.PRINT },
+                { "writeln", TokenType.PRINTLN },
                 { "read", TokenType.INPUT  },
                 { "equ", TokenType.EQUAL },
                 { "then", TokenType.THEN },
                 { "aintso", TokenType.AINTSO  },
-                { "group", TokenType.GROUP }
+                { "group", TokenType.GROUP },
+                { "begin", TokenType.LEFT_BRACE  },
+                { "end", TokenType.RIGHT_BRACE }
                 };
         }
 
@@ -78,6 +81,8 @@
                 case ')': AddToken(TokenType.RIGHT_PAREN); break;
                 case '{': AddToken(TokenType.LEFT_BRACE); break;
                 case '}': AddToken(TokenType.RIGHT_BRACE); break;
+                case '[': AddToken(TokenType.LEFT_BRACKET); break;
+                case ']': AddToken(TokenType.RIGHT_BRACKET); break;
                 case ',': AddToken(TokenType.COMMA); break;
                 case '.': AddToken(TokenType.DOT); break;
                 case '-': AddToken(TokenType.MINUS); break;
@@ -106,7 +111,7 @@
                     break;
                 default:
                     if (char.IsDigit(c)) Number();
-                    else if (char.IsLetter(c) || c == '_') Identifier();
+                    else if (char.IsLetter(c) || c == '_' || c == '@' || c == '?') Identifier();
                     else if (char.IsWhiteSpace(c)) { /* Ignore whitespace */ }
                     else throw new Exception($"Unexpected character: {c}");
                     break;

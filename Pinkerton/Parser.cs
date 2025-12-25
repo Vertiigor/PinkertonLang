@@ -41,6 +41,7 @@ namespace PinkertonInterpreter
         private Statement ParseStatement()
         {
             if (Match(TokenType.PRINT)) return PrintStatement();
+            if (Match(TokenType.PRINTLN)) return PrintLnStatement();
             if (Match(TokenType.VAR)) return VariableStatement();
             if (Match(TokenType.INPUT)) return InputStatement();
             if (Match(TokenType.LEFT_BRACE)) return BlockStatement();
@@ -48,11 +49,21 @@ namespace PinkertonInterpreter
             if (Match(TokenType.WHILE)) return WhileStatement();
             if (Match(TokenType.BREAK)) return BreakStatement();
             if (Match(TokenType.CONTINUE)) return ContinueStatement();
+            if (Match(TokenType.FUNCTION)) return FunctionDeclaration();
+            if (Match(TokenType.RETURN)) return ReturnStatement();
             // сюда потом можно добавить: if (Match(TokenType.IF)) return IfStatement();
             // if (Match(TokenType.WHILE)) return WhileStatement();
             // ...
 
             return ExpressionStatement();
+        }
+
+        private Statement PrintLnStatement()
+        {
+            // Не Match(TokenType.SCREAM) здесь — токен уже съеден в ParseStatement()
+            Expression value = Expression();
+            //Consume(TokenType.SEMICOLON, "Expect ';' after value.");
+            return new PrintLnStatement(value);
         }
 
         private Statement BlockStatement()
@@ -104,6 +115,15 @@ namespace PinkertonInterpreter
         {
             //Consume(TokenType.SEMICOLON, "Expect ';' after continue.");
             return new ContinueStatement();
+        }
+
+        private Statement ReturnStatement()
+        {
+            Expression? value = Expression();
+
+            //Consume(TokenType.SEMICOLON, "Expect ';' after return value.");
+
+            return new ReturnStatement(value);
         }
 
         private Statement PrintStatement()
@@ -191,6 +211,12 @@ namespace PinkertonInterpreter
                 {
                     expr = FinishCall(expr);
                 }
+                else if (Match(TokenType.LEFT_BRACKET))
+                {
+                    var index = Expression();
+                    Consume(TokenType.RIGHT_BRACKET, "Expect ']' after index.");
+                    expr = new IndexExpression(expr, index);
+                }
                 else
                 {
                     break;
@@ -208,6 +234,10 @@ namespace PinkertonInterpreter
             {
                 do
                 {
+                    if (arguments.Count() >= 255)
+                    {
+                        Program.Error(Peek, "Can't have more than 255 arguments.");
+                    }
                     arguments.Add(Expression());
                 }
                 while (Match(TokenType.COMMA));
@@ -215,6 +245,49 @@ namespace PinkertonInterpreter
 
             Token paren = Consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.");
             return new CallExpression(callee, paren, arguments);
+        }
+
+        private Statement FunctionDeclaration()
+        {
+            Token name = Consume(TokenType.IDENTIFIER, "Expect function name.");
+
+            Consume(TokenType.LEFT_PAREN, "Expect '(' after function name.");
+
+            var parameters = new List<Token>();
+            if (!Check(TokenType.RIGHT_PAREN))
+            {
+                do
+                {
+                    parameters.Add(
+                        Consume(TokenType.IDENTIFIER, "Expect parameter name.")
+                    );
+                }
+                while (Match(TokenType.COMMA));
+            }
+
+            Consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.");
+            Consume(TokenType.LEFT_BRACE, "Expect '{' before function body.");
+
+            var body = ((BlockStatement)BlockStatement()).Statements;
+
+            return new FunctionStatement(name, parameters, body);
+        }
+
+        private Expression ArrayLiteral()
+        {
+            var elements = new List<Expression>();
+
+            if (!Check(TokenType.RIGHT_BRACKET))
+            {
+                do
+                {
+                    elements.Add(Expression());
+                }
+                while (Match(TokenType.SEMICOLON));
+            }
+
+            Consume(TokenType.RIGHT_BRACKET, "Expect ']' after array literal.");
+            return new ArrayLiteral(elements);
         }
 
 
@@ -322,6 +395,7 @@ namespace PinkertonInterpreter
             return Call(); // ← ВАЖНО
         }
 
+
         private Expression Primary()
         {
             if (Match(TokenType.FALSE)) return new Literal(false);
@@ -341,8 +415,15 @@ namespace PinkertonInterpreter
                 return new Grouping(expr);
             }
 
+            if (Match(TokenType.LEFT_BRACKET))
+            {
+                return ArrayLiteral();
+            }
+
+
             throw new Exception($"Unexpected token: {Peek.Type}");
         }
+
 
 
         private void Synchronize()
