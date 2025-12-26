@@ -55,7 +55,8 @@
                 { "aintso", TokenType.AINTSO  },
                 { "group", TokenType.GROUP },
                 { "begin", TokenType.LEFT_BRACE  },
-                { "end", TokenType.RIGHT_BRACE }
+                { "end", TokenType.RIGHT_BRACE },
+                { "select", TokenType.SELECT }
                 };
         }
 
@@ -91,7 +92,7 @@
                 case '*': AddToken(TokenType.STAR); break;
                 case '/': AddToken(TokenType.SLASH); break;
                 case '%': AddToken(TokenType.REMAINDER); break;
-                case '$': SkipLine(); break; // Skip comments starting with $
+                case '#': SkipLine(); break; // Skip comments starting with $
                 case '\n': line++; break;
                 case '!':
                     AddToken(Match('=') ? TokenType.AINTSO : TokenType.BANG);
@@ -106,12 +107,16 @@
                     AddToken(Match('=') ? TokenType.GREATER_EQUAL : TokenType.GREATER);
                     break;
                 case '"': String(); break;
+                case '\'':
+                    CharLiteral();
+                    break;
+
                 case ':':
                     AddToken(TokenType.AS);
                     break;
                 default:
                     if (char.IsDigit(c)) Number();
-                    else if (char.IsLetter(c) || c == '_' || c == '@' || c == '?') Identifier();
+                    else if (char.IsLetter(c) || c == '_' || c == '@' || c == '?' || c == '$') Identifier();
                     else if (char.IsWhiteSpace(c)) { /* Ignore whitespace */ }
                     else throw new Exception($"Unexpected character: {c}");
                     break;
@@ -165,6 +170,35 @@
 
             AddToken(TokenType.STRING, value);
         }
+
+        private void CharLiteral()
+        {
+            if (isAtEnd)
+                throw new Exception("Unterminated char literal.");
+
+            char value = Advance();
+
+            // поддержка escape-последовательностей
+            if (value == '\\')
+            {
+                char esc = Advance();
+                value = esc switch
+                {
+                    'n' => '\n',
+                    't' => '\t',
+                    'r' => '\r',
+                    '\\' => '\\',
+                    '\'' => '\'',
+                    _ => throw new Exception($"Unknown escape: \\{esc}")
+                };
+            }
+
+            if (Advance() != '\'')
+                throw new Exception("Char literal must contain exactly one character.");
+
+            AddToken(TokenType.CHAR, value);
+        }
+
 
         private void SkipLine()
         {

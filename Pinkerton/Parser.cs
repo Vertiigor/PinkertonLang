@@ -95,6 +95,22 @@ namespace PinkertonInterpreter
             return new IfStatement(condition, thenBranch, elseBranch);
         }
 
+        private Expression SelectExpression()
+        {
+            Consume(TokenType.IF, "Expect 'if' before the condition.");
+            //Consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.");
+            Expression condition = Expression();
+            //Consume(TokenType.RIGHT_PAREN, "Expect ')' after if condition.");
+            Consume(TokenType.THEN, "Expect 'then' after if condition.");
+            Expression thenBranch = Expression();
+
+            Consume(TokenType.ELSE, "Expect 'else' after the condition.");
+
+            Expression elseBranch = Expression();
+
+            return new SelectExpression(condition, thenBranch, elseBranch);
+        }
+
         private Statement WhileStatement()
         {
             //Consume(TokenType.LEFT_PAREN, "Expect '(' after 'while'.");
@@ -402,8 +418,9 @@ namespace PinkertonInterpreter
             if (Match(TokenType.TRUE)) return new Literal(true);
             if (Match(TokenType.NULL)) return new Literal(null);
 
-            if (Match(TokenType.NUMBER, TokenType.STRING))
+            if (Match(TokenType.NUMBER, TokenType.STRING, TokenType.CHAR))
                 return new Literal(Previous.Literal);
+
 
             if (Match(TokenType.IDENTIFIER))
                 return new VariableExpression(Previous);
@@ -420,11 +437,13 @@ namespace PinkertonInterpreter
                 return ArrayLiteral();
             }
 
+            if (Match(TokenType.SELECT))
+            {
+                return SelectExpression();
+            }
 
             throw new Exception($"Unexpected token: {Peek.Type}");
         }
-
-
 
         private void Synchronize()
         {

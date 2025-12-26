@@ -22,7 +22,7 @@
         NULL, AND, OR, TRUE, FALSE, NOT,
         ARRAY,
         RETURN, DO, PROCEDURE, BREAK, CONTINUE,
-        PRINT, PRINTLN, INPUT,
+        PRINT, PRINTLN, INPUT, SELECT,
 
         GROUP,
 

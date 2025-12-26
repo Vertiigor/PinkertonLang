@@ -44,8 +44,76 @@ namespace PinkertonInterpreter
             Globals.Define("@str",
                 new NativeFunction(1, args => Convert.ToString(args[0])));
 
-            Globals.Define("?num",
-                new NativeFunction(1, args => double.TryParse(Convert.ToString(args), out _)));
+            Globals.Define("@char",
+                new NativeFunction(1, args => Convert.ToChar(Convert.ToInt32(args[0]))));
+
+            Globals.Define("@ord",
+                new NativeFunction(1, args => Convert.ToInt32(Convert.ToChar(args[0]))));
+
+            Globals.Define("@str",
+                new NativeFunction(1, args => Convert.ToString(args[0])));
+
+            Globals.Define("?empty",
+                new NativeFunction(1, args => (args[0] as List<object>).Count == 0));
+
+            Globals.Define("@size",
+                new NativeFunction(1, args => Convert.ToDouble((args[0] as List<object>).Count)));
+
+            Globals.Define("@len",
+                new NativeFunction(1, args => Convert.ToDouble(Convert.ToString(args[0]).Length)));
+
+            Globals.Define("@charAt",
+                new NativeFunction(2, args => Convert.ToString(args[0]).ElementAt(Convert.ToInt32(args[1]))));
+
+            Globals.Define("$add",
+                new NativeFunction(2, args =>
+                {
+                    (args[0] as List<object>).Add(args[1]);
+
+                    return null;
+                }));
+
+            Globals.Define("$insert",
+                new NativeFunction(3, args =>
+                {
+                    (args[0] as List<object>).Insert((Convert.ToInt32(args[2])), args[1]);
+
+                    return null;
+                }));
+
+            Globals.Define("$remove",
+                new NativeFunction(2, args =>
+                {
+                    (args[0] as List<object>).RemoveAt(Convert.ToInt32(args[1]));
+
+                    return null;
+                }));
+
+            Globals.Define("$clear",
+                new NativeFunction(1, args =>
+                {
+                    (args[0] as List<object>).Clear();
+
+                    return null;
+                }));
+
+            Globals.Define("?contains",
+                new NativeFunction(2, args =>
+                {
+                    (args[0] as List<object>).Contains(args[1]);
+
+                    return null;
+                }));
+
+            Globals.Define("$assign",
+                new NativeFunction(3, args =>
+                {
+                    (args[0] as List<object>)[Convert.ToInt32(args[1])] = args[2];
+
+                    return null;
+                }));
+
+            //Runtime error: Unable to cast object of type 'System.Collections.Generic.List`1[System.Object]' to type 'System.Double'.
 
             //Globals.Define("@num", new Func<object, double>(Convert.ToDouble));
             //Globals.Define("@str", new Func<object, string>(Convert.ToString));
@@ -68,8 +136,9 @@ namespace PinkertonInterpreter
             ArrayLiteral(var elements) =>
                 elements.Select(Evaluate).ToList(),
 
-        IndexExpression(var target, var index) => GetByIndex(target, index),
+            IndexExpression(var target, var index) => GetByIndex(target, index),
 
+            SelectExpression(var con, var thenEx, var elseEx) => Select(con, thenEx, elseEx),
 
             Unary(var op, var right) => EvaluateUnary(op, Evaluate(right)),
 
@@ -90,6 +159,18 @@ namespace PinkertonInterpreter
 
             var i = Convert.ToInt32(Evaluate(index));
             return array[i];
+        }
+
+        private object? Select(Expression condition, Expression thenEx, Expression elseEx)
+        {
+            if (IsTruthy(Evaluate(condition)))
+            {
+                return Evaluate(thenEx);
+            }
+            else
+            {
+                return Evaluate(elseEx);
+            }
         }
 
         // Новый метод для Statement
