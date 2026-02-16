@@ -47,6 +47,7 @@ namespace PinkertonInterpreter
             if (Match(TokenType.LEFT_BRACE)) return BlockStatement();
             if (Match(TokenType.IF)) return IfStatement();
             if (Match(TokenType.WHILE)) return WhileStatement();
+            if (Match(TokenType.FOR)) return ForStatement();
             if (Match(TokenType.BREAK)) return BreakStatement();
             if (Match(TokenType.CONTINUE)) return ContinueStatement();
             if (Match(TokenType.FUNCTION)) return FunctionDeclaration();
@@ -60,9 +61,8 @@ namespace PinkertonInterpreter
 
         private Statement PrintLnStatement()
         {
-            // Не Match(TokenType.SCREAM) здесь — токен уже съеден в ParseStatement()
             Expression value = Expression();
-            //Consume(TokenType.SEMICOLON, "Expect ';' after value.");
+
             return new PrintLnStatement(value);
         }
 
@@ -75,36 +75,38 @@ namespace PinkertonInterpreter
                 statements.Add(ParseStatement());
             }
 
-            Consume(TokenType.RIGHT_BRACE, "Expect '}' after block.");
+            Consume(TokenType.RIGHT_BRACE, "Expect 'END' after block.");
 
             return new BlockStatement(statements);
         }
 
         private Statement IfStatement()
         {
-            //Consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.");
             Expression condition = Expression();
-            //Consume(TokenType.RIGHT_PAREN, "Expect ')' after if condition.");
-            Consume(TokenType.THEN, "Expect 'then' after if condition.");
+            
+            Consume(TokenType.THEN, "Expect 'THEN' after if condition.");
+            
             Statement thenBranch = ParseStatement();
             Statement? elseBranch = null;
+            
             if (Match(TokenType.ELSE))
             {
                 elseBranch = ParseStatement();
+            
             }
             return new IfStatement(condition, thenBranch, elseBranch);
         }
 
         private Expression SelectExpression()
         {
-            Consume(TokenType.IF, "Expect 'if' before the condition.");
-            //Consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.");
+            Consume(TokenType.IF, "Expect 'IF' before the condition.");
+
             Expression condition = Expression();
-            //Consume(TokenType.RIGHT_PAREN, "Expect ')' after if condition.");
-            Consume(TokenType.THEN, "Expect 'then' after if condition.");
+
+            Consume(TokenType.THEN, "Expect 'THEN' after if condition.");
             Expression thenBranch = Expression();
 
-            Consume(TokenType.ELSE, "Expect 'else' after the condition.");
+            Consume(TokenType.ELSE, "Expect 'ELSE' after the condition.");
 
             Expression elseBranch = Expression();
 
@@ -113,23 +115,55 @@ namespace PinkertonInterpreter
 
         private Statement WhileStatement()
         {
-            //Consume(TokenType.LEFT_PAREN, "Expect '(' after 'while'.");
             Expression condition = Expression();
-            Consume(TokenType.DO, "Expect 'do' after while condition.");
-            //Consume(TokenType.RIGHT_PAREN, "Expect ')' after while condition.");
+
+            Consume(TokenType.DO, "Expect 'DO' after while condition.");
+
             Statement body = ParseStatement();
+
             return new WhileLoopStatement(condition, body);
+        }
+
+        private Statement ForStatement()
+        {
+            Statement? initializer;
+
+            if (Match(TokenType.SEMICOLON))
+            {
+                initializer = null;
+            }
+            else if (Match(TokenType.VAR))
+            {
+                initializer = VariableStatement();
+            }
+            else
+            {
+                initializer = ExpressionStatement();
+            }
+            Expression? condition = null;
+            if (!Check(TokenType.SEMICOLON))
+            {
+                condition = Expression();
+            }
+
+            Expression? increment = null;
+            if (!Check(TokenType.RIGHT_PAREN))
+            {
+                increment = Expression();
+            }
+
+            Statement body = ParseStatement();
+
+            return new ForLoopStatement(initializer, condition, increment, body);
         }
 
         private Statement BreakStatement()
         {
-            //Consume(TokenType.SEMICOLON, "Expect ';' after break.");
             return new BreakStatement();
         }
 
         private Statement ContinueStatement()
         {
-            //Consume(TokenType.SEMICOLON, "Expect ';' after continue.");
             return new ContinueStatement();
         }
 
@@ -137,31 +171,27 @@ namespace PinkertonInterpreter
         {
             Expression? value = Expression();
 
-            //Consume(TokenType.SEMICOLON, "Expect ';' after return value.");
-
             return new ReturnStatement(value);
         }
 
         private Statement PrintStatement()
         {
-            // Не Match(TokenType.SCREAM) здесь — токен уже съеден в ParseStatement()
             Expression value = Expression();
-            //Consume(TokenType.SEMICOLON, "Expect ';' after value.");
+
             return new PrintStatement(value);
         }
 
         private Statement InputStatement()
         {
-            var name = Consume(TokenType.IDENTIFIER, "Expect variable name after 'input'.");
-            //Consume(TokenType.SEMICOLON, "Expect ';' after input statement.");
+            var name = Consume(TokenType.IDENTIFIER, "Expect variable name after 'READ'.");
+
             return new InputStatement(name);
         }
 
 
         private Statement ExpressionStatement()
         {
-            Expression expr = Assignment(); // вместо Expression()
-            //Consume(TokenType.SEMICOLON, "Expect ';' after expression.");
+            Expression expr = Assignment();
             return new ExpressionStatement(expr);
         }
 
@@ -192,7 +222,6 @@ namespace PinkertonInterpreter
             }
 
             // 4. Обязательный конец с ';'
-            //Consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
 
             return new VariableStatement(name, initializer /*, typeToken*/);
         }
@@ -282,7 +311,7 @@ namespace PinkertonInterpreter
             }
 
             Consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.");
-            Consume(TokenType.LEFT_BRACE, "Expect '{' before function body.");
+            Consume(TokenType.LEFT_BRACE, "Expect 'BEGIN' before function body.");
 
             var body = ((BlockStatement)BlockStatement()).Statements;
 
@@ -506,7 +535,7 @@ namespace PinkertonInterpreter
         private Token Advance()
         {
             if (!IsAtEnd) _current++;
-
+            
             return Previous;
         }
 

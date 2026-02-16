@@ -17,12 +17,12 @@
 
         // Keywords
         VAR, AS, INT, DOUBLE_KW, STRING_KW, FLOAT_KW, BOOL_KW,
-        IF, THEN, WHILE, ELSE,
-        FUNCTION, CHAR_KW,
+        IF, THEN, WHILE, FOR, FOREACH, ELSE, RANGE,
+        FUNCTION, WITH, CHAR_KW,
         NULL, AND, OR, TRUE, FALSE, NOT,
         ARRAY,
         RETURN, DO, PROCEDURE, BREAK, CONTINUE,
-        PRINT, PRINTLN, INPUT, SELECT,
+        PRINT, PRINTLN, INPUT, SELECT, IN,
 
         GROUP,
 

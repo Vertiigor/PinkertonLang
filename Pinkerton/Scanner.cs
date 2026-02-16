@@ -1,4 +1,6 @@
-﻿namespace PinkertonInterpreter
+﻿using System.Globalization;
+
+namespace PinkertonInterpreter
 {
     internal class Scanner
     {
@@ -23,40 +25,44 @@
             _tokens = new List<Token>();
             _keywords = new Dictionary<string, TokenType>
             {
-                { "let", TokenType.VAR },
-                { "as", TokenType.AS },
-                { "int", TokenType.INT },
-                { "double", TokenType.DOUBLE_KW },
-                { "string", TokenType.STRING_KW },
-                { "float", TokenType.FLOAT_KW },
-                { "bool", TokenType.BOOL_KW },
-                { "if", TokenType.IF },
-                { "while", TokenType.WHILE },
-                { "else", TokenType.ELSE },
-                { "function", TokenType.FUNCTION },
-                { "char", TokenType.CHAR_KW },
-                { "null", TokenType.NULL },
-                { "and", TokenType.AND },
-                { "or", TokenType.OR },
-                { "true", TokenType.TRUE },
-                { "false", TokenType.FALSE },
-                { "not", TokenType.NOT },
-                { "array", TokenType.ARRAY },
-                { "return", TokenType.RETURN },
-                { "do", TokenType.DO },
-                { "procedure", TokenType.PROCEDURE },
-                { "break", TokenType.BREAK },
-                { "again", TokenType.CONTINUE },
-                { "write", TokenType.PRINT },
-                { "writeln", TokenType.PRINTLN },
-                { "read", TokenType.INPUT  },
-                { "equ", TokenType.EQUAL },
-                { "then", TokenType.THEN },
-                { "aintso", TokenType.AINTSO  },
-                { "group", TokenType.GROUP },
-                { "begin", TokenType.LEFT_BRACE  },
-                { "end", TokenType.RIGHT_BRACE },
-                { "select", TokenType.SELECT }
+                { "LET", TokenType.VAR },
+                { "AS", TokenType.EQUAL },
+                { "INT", TokenType.INT },
+                { "DOUBLE", TokenType.DOUBLE_KW },
+                { "STRING", TokenType.STRING_KW },
+                { "FLOAT", TokenType.FLOAT_KW },
+                { "BOOL", TokenType.BOOL_KW },
+                { "IF", TokenType.IF },
+                { "WHILE", TokenType.WHILE },
+                { "FOR", TokenType.FOR },
+                { "ELSE", TokenType.ELSE },
+                { "FUNCTION", TokenType.FUNCTION },
+                { "CHAR", TokenType.CHAR_KW },
+                { "NULL", TokenType.NULL },
+                { "AND", TokenType.AND },
+                { "OR", TokenType.OR },
+                { "TRUE", TokenType.TRUE },
+                { "FALSE", TokenType.FALSE },
+                { "NOT", TokenType.NOT },
+                { "ARRAY", TokenType.ARRAY },
+                { "RETURN", TokenType.RETURN },
+                { "DO", TokenType.DO },
+                { "PROCEDURE", TokenType.PROCEDURE },
+                { "BREAK", TokenType.BREAK },
+                { "AGAIN", TokenType.CONTINUE },
+                { "WRITE", TokenType.PRINT },
+                { "WRITELN", TokenType.PRINTLN },
+                { "READ", TokenType.INPUT  },
+                { "THEN", TokenType.THEN },
+                { "ISNT", TokenType.AINTSO  },
+                { "GROUP", TokenType.GROUP },
+                { "BEGIN", TokenType.LEFT_BRACE  },
+                { "END", TokenType.RIGHT_BRACE },
+                { "SELECT", TokenType.SELECT },
+                { "IS", TokenType.EQUAL_EQUAL},
+                { "..",TokenType.RANGE },
+                { "WITH", TokenType.WITH },
+                { "IN", TokenType.IN }
                 };
         }
 
@@ -73,6 +79,15 @@
             return _tokens;
         }
 
+        private static bool IsIdentifierChar(char c)
+        {
+            return
+                char.IsLetterOrDigit(c)
+                || c == '_'
+                || char.GetUnicodeCategory(c) == UnicodeCategory.OtherLetter;
+        }
+
+
         private void ScanToken()
         {
             char c = Advance();
@@ -85,7 +100,6 @@
                 case '[': AddToken(TokenType.LEFT_BRACKET); break;
                 case ']': AddToken(TokenType.RIGHT_BRACKET); break;
                 case ',': AddToken(TokenType.COMMA); break;
-                case '.': AddToken(TokenType.DOT); break;
                 case '-': AddToken(TokenType.MINUS); break;
                 case '+': AddToken(TokenType.PLUS); break;
                 case ';': AddToken(TokenType.SEMICOLON); break;
@@ -116,7 +130,7 @@
                     break;
                 default:
                     if (char.IsDigit(c)) Number();
-                    else if (char.IsLetter(c) || c == '_' || c == '@' || c == '?' || c == '$') Identifier();
+                    else if (IsIdentifierChar(c)) Identifier();
                     else if (char.IsWhiteSpace(c)) { /* Ignore whitespace */ }
                     else throw new Exception($"Unexpected character: {c}");
                     break;
@@ -125,19 +139,17 @@
 
         private void Identifier()
         {
-            while (char.IsLetterOrDigit(Peek) || Peek == '_') Advance();
+            while (IsIdentifierChar(Peek))
+                Advance();
 
             string text = _source.Substring(start, current - start);
 
-            TokenType type;
-
-            if (!_keywords.TryGetValue(text, out type))
-            {
+            if (!_keywords.TryGetValue(text, out var type))
                 type = TokenType.IDENTIFIER;
-            }
 
             AddToken(type);
         }
+
 
         private void Number()
         {

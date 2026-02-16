@@ -9,31 +9,63 @@ namespace PinkertonInterpreter
 
         static void Main(string[] args)
         {
-            Run("file.pink");
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+            Console.InputEncoding = System.Text.Encoding.UTF8;
 
-            if (args.Length == 0)
-            {
-                RunPromt();
-                return;
-            }
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine(" 888888ba  oo          dP                           dP                                  a8888a     d88  \r\n 88    `8b             88                           88                                 d8' ..8b     88  \r\na88aaaa8P' dP 88d888b. 88  .dP  .d8888b. 88d888b. d8888P .d8888b. 88d888b.    dP   .dP 88 .P 88     88  \r\n 88        88 88'  `88 88888\"   88ooood8 88'  `88   88   88'  `88 88'  `88    88   d8' 88 d' 88     88  \r\n 88        88 88    88 88  `8b. 88.  ... 88         88   88.  .88 88    88    88 .88'  Y8'' .8P dP  88  \r\n dP        dP dP    dP dP   `YP `88888P' dP         dP   `88888P' dP    dP    8888P'    Y8888P  88 d88P");
+            Console.ResetColor();
 
-            if (args.Length > 1)
-            {
-                Console.WriteLine("Usage: flow {file.fl}");
-                return;
-            }
+            string input;
 
-            // Ensure the first argument is a valid file path
-            string filePath = args[0];
+            while (true)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.Write("Pinkerton> ");
+                Console.ResetColor();
+                input = Console.ReadLine();
+                if (input?.ToLower() == "exit")
+                {
+                    break;
+                }
+                if (input?.ToLower() == "clear")
+                {
+                    Console.Clear();
+                    continue;
+                }
+                if (input?.Split(' ')[0].ToLower() == "run") // run file.pink
+                {
+                    string fileName = input.Split(' ')[1].Trim();
+                    if (File.Exists(fileName))
+                    {
+                        Run(fileName);
+                    }
+                    else
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"File not found: {fileName}");
+                        Console.ResetColor();
+                    }
+                }
+                if (input?.ToLower() == "list")
+                {
+                    var files = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.pink");
 
-            if (!File.Exists(filePath))
-            {
-                Console.WriteLine($"File not found: {filePath}");
-                return;
-            }
-            else
-            {
-                Run(filePath);
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine("Available .pink files:");
+                    Console.ResetColor();
+
+                    foreach (var file in files)
+                    {
+                        Console.WriteLine(Path.GetFileName(file));
+                    }
+
+                    continue;
+                }
+                if (input?.ToLower() == "prompt")
+                {
+                    RunPrompt();
+                }
             }
         }
 
@@ -50,22 +82,11 @@ namespace PinkertonInterpreter
 
         private static void Execute(string content)
         {
-            // 1️⃣ Сканируем
             Scanner scanner = new Scanner(content);
             List<Token> tokens = scanner.ScanTokens();
 
-            //// 2️⃣ (Опционально) печатаем токены для отладки
-            //foreach (var token in tokens)
-            //{
-            //    Console.ForegroundColor = ConsoleColor.DarkGray;
-            //    Console.WriteLine(token);
-            //    Console.ResetColor();
-            //}
-
-            // 3️⃣ Парсим
             Parser parser = new Parser(tokens);
 
-            // Теперь Parse возвращает List<Statement>
             List<Statement> statements = parser.Parse();
 
             if (statements == null || statements.Count == 0)
@@ -76,7 +97,6 @@ namespace PinkertonInterpreter
                 return;
             }
 
-            // 4️⃣ Выполняем каждый Statement
             foreach (var stmt in statements)
             {
                 try
@@ -110,16 +130,10 @@ namespace PinkertonInterpreter
         private static void report(int line, string where, string message)
         {
             Console.WriteLine("[line " + line + "] Error" + where + ": " + message);
-
-            // hadError = true;
         }
 
-        private static void RunPromt()
+        private static void RunPrompt()
         {
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("Pinkerton v0.1");
-            Console.ResetColor();
-
             int lineNumber = 1;
 
             while (true)

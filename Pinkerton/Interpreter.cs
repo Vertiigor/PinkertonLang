@@ -20,52 +20,63 @@ namespace PinkertonInterpreter
 
             Globals.Define("E", Math.E);
 
-            Globals.Define("sqrt",
+            Globals.Define("SQRT",
                 new NativeFunction(1, args => Math.Sqrt(Convert.ToDouble(args[0]))));
 
-            Globals.Define("sin",
+            Globals.Define("POW",
+                new NativeFunction(2, args => Math.Pow(Convert.ToDouble(args[0]), Convert.ToDouble(args[1]))));
+
+            Globals.Define("SIN",
                 new NativeFunction(1, args => Math.Sin(Convert.ToDouble(args[0]))));
 
-            Globals.Define("cos",
+            Globals.Define("COS",
                 new NativeFunction(1, args => Math.Cos(Convert.ToDouble(args[0]))));
 
-            Globals.Define("tan",
+            Globals.Define("TAN",
                 new NativeFunction(1, args => Math.Tan(Convert.ToDouble(args[0]))));
 
-            Globals.Define("cot",
+            Globals.Define("COT",
                 new NativeFunction(1, args => 1.0 / Math.Tan(Convert.ToDouble(args[0]))));
 
-            Globals.Define("@num",
+            Globals.Define("_RANDOM",
+                new NativeFunction(2, args =>
+                {
+                    var min = Convert.ToDouble(args[0]);
+                    var max = Convert.ToDouble(args[1]);
+                    return new Random().NextDouble() * (max - min) + min;
+                }));
+
+            Globals.Define("_NUM",
                 new NativeFunction(1, args => Convert.ToDouble(args[0])));
 
-            Globals.Define("@bool",
+            Globals.Define("_BOOL",
                 new NativeFunction(1, args => Convert.ToBoolean(args[0])));
 
-            Globals.Define("@str",
+            Globals.Define("_STR",
                 new NativeFunction(1, args => Convert.ToString(args[0])));
 
-            Globals.Define("@char",
+            Globals.Define("_CHAR",
                 new NativeFunction(1, args => Convert.ToChar(Convert.ToInt32(args[0]))));
 
-            Globals.Define("@ord",
+            Globals.Define("_ORD",
                 new NativeFunction(1, args => Convert.ToInt32(Convert.ToChar(args[0]))));
 
-            Globals.Define("@str",
+            Globals.Define("_STR",
                 new NativeFunction(1, args => Convert.ToString(args[0])));
 
-            Globals.Define("?empty",
+            Globals.Define("_EMPTY",
                 new NativeFunction(1, args => (args[0] as List<object>).Count == 0));
 
-            Globals.Define("@size",
+            Globals.Define("_SIZE",
                 new NativeFunction(1, args => Convert.ToDouble((args[0] as List<object>).Count)));
 
-            Globals.Define("@len",
+            Globals.Define("_LEN",
                 new NativeFunction(1, args => Convert.ToDouble(Convert.ToString(args[0]).Length)));
 
-            Globals.Define("@charAt",
+            Globals.Define("_CHAR_AT",
                 new NativeFunction(2, args => Convert.ToString(args[0]).ElementAt(Convert.ToInt32(args[1]))));
 
-            Globals.Define("$add",
+            Globals.Define("_ADD",
                 new NativeFunction(2, args =>
                 {
                     (args[0] as List<object>).Add(args[1]);
@@ -73,7 +84,7 @@ namespace PinkertonInterpreter
                     return null;
                 }));
 
-            Globals.Define("$insert",
+            Globals.Define("_INSERT",
                 new NativeFunction(3, args =>
                 {
                     (args[0] as List<object>).Insert((Convert.ToInt32(args[2])), args[1]);
@@ -81,7 +92,7 @@ namespace PinkertonInterpreter
                     return null;
                 }));
 
-            Globals.Define("$remove",
+            Globals.Define("_REMOVE",
                 new NativeFunction(2, args =>
                 {
                     (args[0] as List<object>).RemoveAt(Convert.ToInt32(args[1]));
@@ -89,7 +100,7 @@ namespace PinkertonInterpreter
                     return null;
                 }));
 
-            Globals.Define("$clear",
+            Globals.Define("_CLEAR",
                 new NativeFunction(1, args =>
                 {
                     (args[0] as List<object>).Clear();
@@ -97,7 +108,7 @@ namespace PinkertonInterpreter
                     return null;
                 }));
 
-            Globals.Define("?contains",
+            Globals.Define("_CONTAINS",
                 new NativeFunction(2, args =>
                 {
                     (args[0] as List<object>).Contains(args[1]);
@@ -105,7 +116,7 @@ namespace PinkertonInterpreter
                     return null;
                 }));
 
-            Globals.Define("$assign",
+            Globals.Define("_ASSIGN",
                 new NativeFunction(3, args =>
                 {
                     (args[0] as List<object>)[Convert.ToInt32(args[1])] = args[2];
@@ -113,12 +124,20 @@ namespace PinkertonInterpreter
                     return null;
                 }));
 
-            //Runtime error: Unable to cast object of type 'System.Collections.Generic.List`1[System.Object]' to type 'System.Double'.
+            Globals.Define("_SORT",
+                new NativeFunction(1, args =>
+                {
+                    (args[0] as List<object>).Sort();
+                    return null;
+                }));
 
-            //Globals.Define("@num", new Func<object, double>(Convert.ToDouble));
-            //Globals.Define("@str", new Func<object, string>(Convert.ToString));
-            //Globals.Define("@bool", new Func<object, bool>(Convert.ToBoolean));
-            //Globals.Define("?num", new Func<object, bool>(obj => double.TryParse(Convert.ToString(obj), out _)));
+            Globals.Define("_JOIN",
+                new NativeFunction(2, args =>
+                {
+                    var list = args[0] as List<object>;
+                    var separator = Convert.ToString(args[1]);
+                    return '[' + string.Join(separator + ' ', list) + ']';
+                })); 
         }
 
         public object? Evaluate(Expression expr) => expr switch
@@ -194,6 +213,8 @@ namespace PinkertonInterpreter
                     : elseBranch != null ? Execute(elseBranch) : null,
 
             WhileLoopStatement(var condition, var body) => WhileLoop(condition, body),
+
+            ForLoopStatement(var initializer, var condition, var increment, var body) => ForLoop(initializer, condition, increment, body),
 
             BreakStatement => throw new BreakException(),
 
@@ -274,6 +295,28 @@ namespace PinkertonInterpreter
                 {
                     continue; // ВАЖНО
                 }
+            }
+            return null;
+        }
+
+        private object? ForLoop(Statement initializer, Expression condition, Expression increment, Statement body)
+        {
+            Execute(initializer);
+            while (IsTruthy(Evaluate(condition)))
+            {
+                try
+                {
+                    Execute(body);
+                }
+                catch (BreakException)
+                {
+                    break; // ВАЖНО
+                }
+                catch (ContinueException)
+                {
+                    // Выполняем инкремент и продолжаем цикл
+                }
+                Evaluate(increment);
             }
             return null;
         }
