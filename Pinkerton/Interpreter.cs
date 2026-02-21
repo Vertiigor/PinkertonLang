@@ -16,29 +16,29 @@ namespace PinkertonInterpreter
         {
             _environment = Globals;
 
-            Globals.Define("PI", Math.PI);
+            Globals.Define("Pi", Math.PI);
 
             Globals.Define("E", Math.E);
 
-            Globals.Define("SQRT",
+            Globals.Define("sqrt",
                 new NativeFunction(1, args => Math.Sqrt(Convert.ToDouble(args[0]))));
 
-            Globals.Define("POW",
+            Globals.Define("pow",
                 new NativeFunction(2, args => Math.Pow(Convert.ToDouble(args[0]), Convert.ToDouble(args[1]))));
 
-            Globals.Define("SIN",
+            Globals.Define("sin",
                 new NativeFunction(1, args => Math.Sin(Convert.ToDouble(args[0]))));
 
-            Globals.Define("COS",
+            Globals.Define("cos",
                 new NativeFunction(1, args => Math.Cos(Convert.ToDouble(args[0]))));
 
-            Globals.Define("TAN",
+            Globals.Define("tan",
                 new NativeFunction(1, args => Math.Tan(Convert.ToDouble(args[0]))));
 
-            Globals.Define("COT",
+            Globals.Define("cot",
                 new NativeFunction(1, args => 1.0 / Math.Tan(Convert.ToDouble(args[0]))));
 
-            Globals.Define("_RANDOM",
+            Globals.Define("random",
                 new NativeFunction(2, args =>
                 {
                     var min = Convert.ToDouble(args[0]);
@@ -46,37 +46,34 @@ namespace PinkertonInterpreter
                     return new Random().NextDouble() * (max - min) + min;
                 }));
 
-            Globals.Define("_NUM",
+            Globals.Define("toNumber",
                 new NativeFunction(1, args => Convert.ToDouble(args[0])));
 
-            Globals.Define("_BOOL",
+            Globals.Define("toBoolean",
                 new NativeFunction(1, args => Convert.ToBoolean(args[0])));
 
-            Globals.Define("_STR",
+            Globals.Define("toString",
                 new NativeFunction(1, args => Convert.ToString(args[0])));
 
-            Globals.Define("_CHAR",
+            Globals.Define("toChar",
                 new NativeFunction(1, args => Convert.ToChar(Convert.ToInt32(args[0]))));
 
-            Globals.Define("_ORD",
+            Globals.Define("toOrd",
                 new NativeFunction(1, args => Convert.ToInt32(Convert.ToChar(args[0]))));
 
-            Globals.Define("_STR",
-                new NativeFunction(1, args => Convert.ToString(args[0])));
-
-            Globals.Define("_EMPTY",
+            Globals.Define("isEmpty",
                 new NativeFunction(1, args => (args[0] as List<object>).Count == 0));
 
-            Globals.Define("_SIZE",
+            Globals.Define("size",
                 new NativeFunction(1, args => Convert.ToDouble((args[0] as List<object>).Count)));
 
-            Globals.Define("_LEN",
+            Globals.Define("length",
                 new NativeFunction(1, args => Convert.ToDouble(Convert.ToString(args[0]).Length)));
 
-            Globals.Define("_CHAR_AT",
+            Globals.Define("charAt",
                 new NativeFunction(2, args => Convert.ToString(args[0]).ElementAt(Convert.ToInt32(args[1]))));
 
-            Globals.Define("_ADD",
+            Globals.Define("add",
                 new NativeFunction(2, args =>
                 {
                     (args[0] as List<object>).Add(args[1]);
@@ -84,7 +81,7 @@ namespace PinkertonInterpreter
                     return null;
                 }));
 
-            Globals.Define("_INSERT",
+            Globals.Define("insert",
                 new NativeFunction(3, args =>
                 {
                     (args[0] as List<object>).Insert((Convert.ToInt32(args[2])), args[1]);
@@ -92,7 +89,7 @@ namespace PinkertonInterpreter
                     return null;
                 }));
 
-            Globals.Define("_REMOVE",
+            Globals.Define("remove",
                 new NativeFunction(2, args =>
                 {
                     (args[0] as List<object>).RemoveAt(Convert.ToInt32(args[1]));
@@ -100,7 +97,7 @@ namespace PinkertonInterpreter
                     return null;
                 }));
 
-            Globals.Define("_CLEAR",
+            Globals.Define("clear",
                 new NativeFunction(1, args =>
                 {
                     (args[0] as List<object>).Clear();
@@ -108,15 +105,15 @@ namespace PinkertonInterpreter
                     return null;
                 }));
 
-            Globals.Define("_CONTAINS",
+            Globals.Define("contains",
                 new NativeFunction(2, args =>
                 {
-                    (args[0] as List<object>).Contains(args[1]);
+                    var result = (args[0] as List<object>).Contains(args[1]);
 
-                    return null;
+                    return result;
                 }));
 
-            Globals.Define("_ASSIGN",
+            Globals.Define("assign",
                 new NativeFunction(3, args =>
                 {
                     (args[0] as List<object>)[Convert.ToInt32(args[1])] = args[2];
@@ -124,20 +121,26 @@ namespace PinkertonInterpreter
                     return null;
                 }));
 
-            Globals.Define("_SORT",
+            Globals.Define("sort",
                 new NativeFunction(1, args =>
                 {
                     (args[0] as List<object>).Sort();
                     return null;
                 }));
 
-            Globals.Define("_JOIN",
+            Globals.Define("join",
                 new NativeFunction(2, args =>
                 {
                     var list = args[0] as List<object>;
                     var separator = Convert.ToString(args[1]);
                     return '[' + string.Join(separator + ' ', list) + ']';
                 })); 
+
+            Globals.Define("readLine",
+                new NativeFunction(0, args => Console.ReadLine()));
+
+            Globals.Define("read",
+                new NativeFunction(0, args => Console.Read()));
         }
 
         public object? Evaluate(Expression expr) => expr switch
@@ -168,6 +171,10 @@ namespace PinkertonInterpreter
                 _ => EvaluateBinary(Evaluate(left), op, Evaluate(right))
             },
 
+            RangeExpression(var left, var right, var step) => EvaluateRange(left, right, step),
+
+            InExpression(var left, var right) => EvaluateIn(Evaluate(left), Evaluate(right)),
+
             _ => throw new Exception("Unknown expression")
         };
 
@@ -178,6 +185,45 @@ namespace PinkertonInterpreter
 
             var i = Convert.ToInt32(Evaluate(index));
             return array[i];
+        }
+
+        private object EvaluateRange(Expression left, Expression right, Expression? step)
+        {
+            var start = Convert.ToDouble(Evaluate(left));
+            var end = Convert.ToDouble(Evaluate(right));
+            var stepValue = step != null ? Convert.ToDouble(Evaluate(step)) : 1.0;
+
+            var list = new List<object>();
+
+            if (stepValue == 0)
+                throw new Exception("Step value cannot be zero.");
+
+            if (start < end && stepValue < 0)
+                throw new Exception("Step value must be positive for an increasing range.");
+
+            if (start > end && stepValue > 0)
+                throw new Exception("Step value must be negative for a decreasing range.");
+
+            if (start <= end)
+            {
+                for (double i = start; i <= end; i += stepValue)
+                    list.Add(i);
+            }
+            else
+            {
+                for (double i = start; i >= end; i -= stepValue)
+                    list.Add(i);
+            }
+
+            return list;
+        }
+
+        private static object EvaluateIn(object? left, object? right)
+        {
+            if (right is List<object> list)
+                return list.Contains(left);
+
+            throw new Exception("Right operand of 'in' must be a range or array.");
         }
 
         private object? Select(Expression condition, Expression thenEx, Expression elseEx)
@@ -201,9 +247,6 @@ namespace PinkertonInterpreter
 
             ReturnStatement(var value) =>
                 throw new ReturnException(value != null ? Evaluate(value) : null),
-
-
-            InputStatement(var name) => Input(name),
 
             VariableStatement(var name, var initializer) => DefineVariable(name, initializer),
 
@@ -377,7 +420,7 @@ namespace PinkertonInterpreter
                 TokenType.MINUS => (double)left - (double)right,
                 TokenType.STAR => (double)left * (double)right,
                 TokenType.SLASH => (double)left / (double)right,
-                TokenType.REMAINDER => (double)left % (double)right,
+                TokenType.MOD => (double)left % (double)right,
                 TokenType.EQUAL_EQUAL => Equals(left, right),
                 TokenType.AINTSO => !Equals(left, right),
                 TokenType.GREATER => (double)left > (double)right,

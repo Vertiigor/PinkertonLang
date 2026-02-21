@@ -4,7 +4,7 @@
     {
         // Single-character tokens
         LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE, LEFT_BRACKET, RIGHT_BRACKET,
-        COMMA, DOT, MINUS, PLUS, SEMICOLON, SLASH, STAR, REMAINDER,
+        COMMA, DOT, MINUS, PLUS, SEMICOLON, SLASH, STAR, MOD,
 
         // One or two character tokens
         BANG, AINTSO,
@@ -18,11 +18,11 @@
         // Keywords
         VAR, AS, INT, DOUBLE_KW, STRING_KW, FLOAT_KW, BOOL_KW,
         IF, THEN, WHILE, FOR, FOREACH, ELSE, RANGE,
-        FUNCTION, WITH, CHAR_KW,
+        FUNCTION, CHAR_KW,
         NULL, AND, OR, TRUE, FALSE, NOT,
         ARRAY,
         RETURN, DO, PROCEDURE, BREAK, CONTINUE,
-        PRINT, PRINTLN, INPUT, SELECT, IN,
+        PRINT, PRINTLN, SELECT, IN, STEP,
 
         GROUP,
 

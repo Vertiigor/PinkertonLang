@@ -25,44 +25,41 @@ namespace PinkertonInterpreter
             _tokens = new List<Token>();
             _keywords = new Dictionary<string, TokenType>
             {
-                { "LET", TokenType.VAR },
-                { "AS", TokenType.EQUAL },
-                { "INT", TokenType.INT },
-                { "DOUBLE", TokenType.DOUBLE_KW },
-                { "STRING", TokenType.STRING_KW },
-                { "FLOAT", TokenType.FLOAT_KW },
-                { "BOOL", TokenType.BOOL_KW },
-                { "IF", TokenType.IF },
-                { "WHILE", TokenType.WHILE },
-                { "FOR", TokenType.FOR },
-                { "ELSE", TokenType.ELSE },
-                { "FUNCTION", TokenType.FUNCTION },
-                { "CHAR", TokenType.CHAR_KW },
-                { "NULL", TokenType.NULL },
-                { "AND", TokenType.AND },
-                { "OR", TokenType.OR },
-                { "TRUE", TokenType.TRUE },
-                { "FALSE", TokenType.FALSE },
-                { "NOT", TokenType.NOT },
-                { "ARRAY", TokenType.ARRAY },
-                { "RETURN", TokenType.RETURN },
-                { "DO", TokenType.DO },
-                { "PROCEDURE", TokenType.PROCEDURE },
-                { "BREAK", TokenType.BREAK },
-                { "AGAIN", TokenType.CONTINUE },
-                { "WRITE", TokenType.PRINT },
-                { "WRITELN", TokenType.PRINTLN },
-                { "READ", TokenType.INPUT  },
-                { "THEN", TokenType.THEN },
-                { "ISNT", TokenType.AINTSO  },
-                { "GROUP", TokenType.GROUP },
-                { "BEGIN", TokenType.LEFT_BRACE  },
-                { "END", TokenType.RIGHT_BRACE },
-                { "SELECT", TokenType.SELECT },
-                { "IS", TokenType.EQUAL_EQUAL},
-                { "..",TokenType.RANGE },
-                { "WITH", TokenType.WITH },
-                { "IN", TokenType.IN }
+                { "let", TokenType.VAR },
+                { "int", TokenType.INT },
+                { "double", TokenType.DOUBLE_KW },
+                { "string", TokenType.STRING_KW },
+                { "float", TokenType.FLOAT_KW },
+                { "bool", TokenType.BOOL_KW },
+                { "if", TokenType.IF },
+                { "while", TokenType.WHILE },
+                { "for", TokenType.FOR },
+                { "else", TokenType.ELSE },
+                { "function", TokenType.FUNCTION },
+                { "char", TokenType.CHAR_KW },
+                { "null", TokenType.NULL },
+                { "and", TokenType.AND },
+                { "or", TokenType.OR },
+                { "true", TokenType.TRUE },
+                { "false", TokenType.FALSE },
+                { "not", TokenType.NOT },
+                { "array", TokenType.ARRAY },
+                { "return", TokenType.RETURN },
+                { "do", TokenType.DO },
+                { "procedure", TokenType.PROCEDURE },
+                { "break", TokenType.BREAK },
+                { "again", TokenType.CONTINUE },
+                { "write", TokenType.PRINT },
+                { "writeln", TokenType.PRINTLN },
+                { "then", TokenType.THEN },
+                { "isnt", TokenType.AINTSO  },
+                { "group", TokenType.GROUP },
+                { "begin", TokenType.LEFT_BRACE  },
+                { "end", TokenType.RIGHT_BRACE },
+                { "select", TokenType.SELECT },
+                { "mod", TokenType.MOD },
+                { "in", TokenType.IN   },
+                { "step", TokenType.STEP },
                 };
         }
 
@@ -105,14 +102,14 @@ namespace PinkertonInterpreter
                 case ';': AddToken(TokenType.SEMICOLON); break;
                 case '*': AddToken(TokenType.STAR); break;
                 case '/': AddToken(TokenType.SLASH); break;
-                case '%': AddToken(TokenType.REMAINDER); break;
-                case '#': SkipLine(); break; // Skip comments starting with $
+                //case '%': AddToken(TokenType.MOD); break;
+                case '$': SkipLine(); break; // Skip comments starting with $
                 case '\n': line++; break;
                 case '!':
                     AddToken(Match('=') ? TokenType.AINTSO : TokenType.BANG);
                     break;
                 case '=':
-                    AddToken(Match('=') ? TokenType.EQUAL_EQUAL : TokenType.EQUAL);
+                    AddToken(TokenType.EQUAL_EQUAL);
                     break;
                 case '<':
                     AddToken(Match('-') ? TokenType.EQUAL : (Match('=') ? TokenType.LESS_EQUAL : TokenType.LESS));
@@ -120,13 +117,15 @@ namespace PinkertonInterpreter
                 case '>':
                     AddToken(Match('=') ? TokenType.GREATER_EQUAL : TokenType.GREATER);
                     break;
+                case '.':
+                    AddToken(Match('.') ? TokenType.RANGE : TokenType.DOT);
+                    break;
                 case '"': String(); break;
                 case '\'':
                     CharLiteral();
                     break;
-
                 case ':':
-                    AddToken(TokenType.AS);
+                    AddToken(Match('=') ? TokenType.EQUAL : TokenType.AS);
                     break;
                 default:
                     if (char.IsDigit(c)) Number();

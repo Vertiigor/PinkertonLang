@@ -4,6 +4,8 @@ using PinkertonInterpreter.Exceptions;
 using PinkertonInterpreter.Grammar;
 using PinkertonInterpreter.Grammar.Expressions;
 using PinkertonInterpreter.Grammar.Statements;
+using System.Linq.Expressions;
+using Expression = PinkertonInterpreter.Grammar.Expression;
 
 namespace PinkertonInterpreter
 {
@@ -43,7 +45,6 @@ namespace PinkertonInterpreter
             if (Match(TokenType.PRINT)) return PrintStatement();
             if (Match(TokenType.PRINTLN)) return PrintLnStatement();
             if (Match(TokenType.VAR)) return VariableStatement();
-            if (Match(TokenType.INPUT)) return InputStatement();
             if (Match(TokenType.LEFT_BRACE)) return BlockStatement();
             if (Match(TokenType.IF)) return IfStatement();
             if (Match(TokenType.WHILE)) return WhileStatement();
@@ -52,9 +53,6 @@ namespace PinkertonInterpreter
             if (Match(TokenType.CONTINUE)) return ContinueStatement();
             if (Match(TokenType.FUNCTION)) return FunctionDeclaration();
             if (Match(TokenType.RETURN)) return ReturnStatement();
-            // сюда потом можно добавить: if (Match(TokenType.IF)) return IfStatement();
-            // if (Match(TokenType.WHILE)) return WhileStatement();
-            // ...
 
             return ExpressionStatement();
         }
@@ -181,14 +179,6 @@ namespace PinkertonInterpreter
             return new PrintStatement(value);
         }
 
-        private Statement InputStatement()
-        {
-            var name = Consume(TokenType.IDENTIFIER, "Expect variable name after 'READ'.");
-
-            return new InputStatement(name);
-        }
-
-
         private Statement ExpressionStatement()
         {
             Expression expr = Assignment();
@@ -260,7 +250,7 @@ namespace PinkertonInterpreter
                 {
                     var index = Expression();
                     Consume(TokenType.RIGHT_BRACKET, "Expect ']' after index.");
-                    expr = new IndexExpression(expr, index);
+                    expr = new Grammar.Expressions.IndexExpression(expr, index);
                 }
                 else
                 {
@@ -357,7 +347,7 @@ namespace PinkertonInterpreter
 
         private Expression Or()
         {
-            var expr = Equality();
+            var expr = In();
 
             while (Match(TokenType.OR))
                 expr = new Binary(expr, Previous, Equality());
@@ -370,6 +360,19 @@ namespace PinkertonInterpreter
 
             while (Match(TokenType.AND))
                 expr = new Binary(expr, Previous, Or());
+            return expr;
+        }
+
+        private Expression In()
+        {
+            Expression expr = Equality();
+
+            if (Match(TokenType.IN))
+            {
+                Expression right = Equality();
+                return new Grammar.Expressions.InExpression(expr, right);
+            }
+
             return expr;
         }
 
@@ -389,7 +392,7 @@ namespace PinkertonInterpreter
 
         private Expression Comparison()
         {
-            Expression expr = Term();
+            Expression expr = Range();
 
             while (Match(TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL))
             {
@@ -397,6 +400,27 @@ namespace PinkertonInterpreter
                 Expression right = Term();
                 expr = new Binary(expr, operatorToken, right);
             }
+            return expr;
+        }
+
+        private Expression Range()
+        {
+            Expression expr = Term();
+
+            if (Match(TokenType.RANGE)) // '..'
+            {
+                Token operatorToken = Previous;
+                Expression right = Comparison();
+                Expression? step = null;
+
+                if (Match(TokenType.STEP))
+                {
+                    step = Term();
+                }
+
+                return new RangeExpression(expr, right, step);
+            }
+
             return expr;
         }
 
@@ -418,7 +442,7 @@ namespace PinkertonInterpreter
         {
             Expression expr = Unary();
 
-            while (Match(TokenType.SLASH, TokenType.STAR, TokenType.REMAINDER))
+            while (Match(TokenType.SLASH, TokenType.STAR, TokenType.MOD))
             {
                 Token operatorToken = Previous;
                 Expression right = Unary();
