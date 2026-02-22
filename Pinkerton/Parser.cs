@@ -301,6 +301,18 @@ namespace PinkertonInterpreter
             }
 
             Consume(TokenType.RIGHT_PAREN, "Expect ')' after parameters.");
+
+            if (Match(TokenType.EQUAL))
+            {
+                Expression expr = Expression();
+                var body2 = new List<Statement>
+                {
+                    new ReturnStatement(expr)
+                };
+
+                return new FunctionStatement(name, parameters, body2);
+            }
+
             Consume(TokenType.LEFT_BRACE, "Expect 'BEGIN' before function body.");
 
             var body = ((BlockStatement)BlockStatement()).Statements;

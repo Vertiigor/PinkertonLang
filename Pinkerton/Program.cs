@@ -47,6 +47,25 @@ namespace PinkertonInterpreter
                         Console.ResetColor();
                     }
                 }
+                if (input?.Split(' ')[0].ToLower() == "show")
+                {
+                    string fileName = input.Split(' ')[1].Trim();
+                    byte[] bytes = File.ReadAllBytes(fileName);
+                    string fileContent = Encoding.UTF8.GetString(bytes);
+                    var lines = fileContent.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                    var lineNum = 1;
+
+                    Console.ForegroundColor = ConsoleColor.White;
+                    foreach (var line in lines)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.Write($"{lineNum}.\t");
+                        Console.ResetColor();
+                        Console.WriteLine($"{line}");
+                        lineNum++;
+                    }
+                    Console.ResetColor();
+                }
                 if (input?.ToLower() == "list")
                 {
                     var files = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.pink");
