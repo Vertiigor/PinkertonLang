@@ -13,7 +13,7 @@ namespace PinkertonInterpreter
             Console.InputEncoding = System.Text.Encoding.UTF8;
 
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine(" 888888ba  oo          dP                           dP                                  a8888a     d88  \r\n 88    `8b             88                           88                                 d8' ..8b     88  \r\na88aaaa8P' dP 88d888b. 88  .dP  .d8888b. 88d888b. d8888P .d8888b. 88d888b.    dP   .dP 88 .P 88     88  \r\n 88        88 88'  `88 88888\"   88ooood8 88'  `88   88   88'  `88 88'  `88    88   d8' 88 d' 88     88  \r\n 88        88 88    88 88  `8b. 88.  ... 88         88   88.  .88 88    88    88 .88'  Y8'' .8P dP  88  \r\n dP        dP dP    dP dP   `YP `88888P' dP         dP   `88888P' dP    dP    8888P'    Y8888P  88 d88P");
+            Console.WriteLine("    ____  _       __             __                      ___ ____ \r\n   / __ \\(_)___  / /_____  _____/ /_____  ____     _   _<  // __ \\\r\n  / /_/ / / __ \\/ //_/ _ \\/ ___/ __/ __ \\/ __ \\   | | / / // / / /\r\n / ____/ / / / / ,< /  __/ /  / /_/ /_/ / / / /   | |/ / // /_/ / \r\n/_/   /_/_/ /_/_/|_|\\___/_/   \\__/\\____/_/ /_/    |___/_(_)____/  \r\n                                                                  ");
             Console.ResetColor();
 
             string input;

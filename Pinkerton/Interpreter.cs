@@ -38,6 +38,38 @@ namespace PinkertonInterpreter
             Globals.Define("cot",
                 new NativeFunction(1, args => 1.0 / Math.Tan(Convert.ToDouble(args[0]))));
 
+            Globals.Define("log",
+                new NativeFunction(2, args =>
+                {
+                    if (args.Count == 1)
+                        return Math.Log(Convert.ToDouble(args[0]));
+                    else if (args.Count == 2)
+                        return Math.Log(Convert.ToDouble(args[0]), Convert.ToDouble(args[1]));
+                    else
+                        throw new Exception("log function takes 1 or 2 arguments");
+                }));
+
+            Globals.Define("exp",
+                new NativeFunction(1, args => Math.Exp(Convert.ToDouble(args[0]))));
+
+            Globals.Define("abs",
+                new NativeFunction(1, args => Math.Abs(Convert.ToDouble(args[0]))));
+
+            Globals.Define("floor",
+                new NativeFunction(1, args => Math.Floor(Convert.ToDouble(args[0]))));
+
+            Globals.Define("ceil",
+                new NativeFunction(1, args => Math.Ceiling(Convert.ToDouble(args[0]))));
+
+            Globals.Define("round",
+                new NativeFunction(1, args => Math.Round(Convert.ToDouble(args[0]))));
+
+            Globals.Define("max",
+                new NativeFunction(2, args => Math.Max(Convert.ToDouble(args[0]), Convert.ToDouble(args[1]))));
+
+            Globals.Define("min",
+                new NativeFunction(2, args => Math.Min(Convert.ToDouble(args[0]), Convert.ToDouble(args[1]))));
+
             Globals.Define("random",
                 new NativeFunction(2, args =>
                 {
@@ -142,7 +174,7 @@ namespace PinkertonInterpreter
             Globals.Define("read",
                 new NativeFunction(0, args => Console.Read()));
         }
-
+        
         public object? Evaluate(Expression expr) => expr switch
         {
             Literal(var value) => value,
@@ -182,6 +214,21 @@ namespace PinkertonInterpreter
         {
             var array = Evaluate(target) as List<object?>
         ?? throw new Exception("Target is not an array");
+
+            if (index is RangeExpression range)
+            {
+                var result = new List<object?>();
+                var rangeList = EvaluateRange(range.left, range.right, range.step) as List<object?>;
+
+                foreach (var idx in rangeList)
+                {
+                    var j = Convert.ToInt32(idx);
+                    if (j < 0 || j >= array.Count)
+                        throw new Exception("Index out of bounds");
+                    result.Add(array[j]);
+                }
+                return result;
+            }
 
             var i = Convert.ToInt32(Evaluate(index));
             return array[i];
