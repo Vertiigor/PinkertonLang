@@ -238,7 +238,7 @@ let primes :=
     2..100
     |> filter(isPrime)
 
-println primes
+writeln join(primes, ';')
 ```
 
 ---
