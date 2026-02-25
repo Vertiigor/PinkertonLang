@@ -39,5 +39,4 @@ namespace PinkertonInterpreter
             return null;
         }
     }
-
 }

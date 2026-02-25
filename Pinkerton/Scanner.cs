@@ -7,16 +7,12 @@ namespace PinkertonInterpreter
         private readonly Dictionary<string, TokenType> _keywords;
         private readonly List<Token> _tokens = new List<Token>();
         private readonly string _source;
-
         private int start = 0;
         private int current = 0;
         private int line = 1;
-
         private bool isAtEnd => current >= _source.Length;
-
         private char Peek => isAtEnd ? EOF : _source[current];
         private char PeekNext => (current + 1) >= _source.Length ? EOF : _source[current + 1];
-
         private const char EOF = '\0';
 
         public Scanner(string source)
@@ -88,6 +84,7 @@ namespace PinkertonInterpreter
         private void ScanToken()
         {
             char c = Advance();
+
             switch (c)
             {
                 case '(': AddToken(TokenType.LEFT_PAREN); break;
@@ -105,6 +102,9 @@ namespace PinkertonInterpreter
                 case '^': AddToken(TokenType.CONCAT); break;
                 case '$': SkipLine(); break; // Skip comments starting with $
                 case '\n': line++; break;
+                case '|': 
+                    AddToken(Match('>') ? TokenType.PIPE : TokenType.BAR);
+                    break;
                 case '!':
                     AddToken(Match('=') ? TokenType.AINTSO : TokenType.BANG);
                     break;
@@ -177,6 +177,7 @@ namespace PinkertonInterpreter
                 if (c == '"') break;
                 if (c == '\n') line++;
             }
+
             string value = _source.Substring(start + 1, current - start - 2); // Exclude the quotes
 
             AddToken(TokenType.STRING, value);
@@ -189,7 +190,7 @@ namespace PinkertonInterpreter
 
             char value = Advance();
 
-            // поддержка escape-последовательностей
+            // Handle escape sequences
             if (value == '\\')
             {
                 char esc = Advance();
@@ -209,7 +210,6 @@ namespace PinkertonInterpreter
 
             AddToken(TokenType.CHAR, value);
         }
-
 
         private void SkipLine()
         {
@@ -245,6 +245,7 @@ namespace PinkertonInterpreter
         private char Advance()
         {
             if (isAtEnd) return EOF;
+
             char c = _source[current];
 
             current++;

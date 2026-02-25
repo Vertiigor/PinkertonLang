@@ -44,5 +44,4 @@
             throw new Exception($"Undefined variable '{name}'.");
         }
     }
-
 }

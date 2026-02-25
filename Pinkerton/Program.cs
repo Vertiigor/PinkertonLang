@@ -23,7 +23,9 @@ namespace PinkertonInterpreter
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.Write("Pinkerton> ");
                 Console.ResetColor();
+
                 input = Console.ReadLine();
+                
                 if (input?.ToLower() == "exit")
                 {
                     break;
@@ -31,11 +33,13 @@ namespace PinkertonInterpreter
                 if (input?.ToLower() == "clear")
                 {
                     Console.Clear();
+
                     continue;
                 }
                 if (input?.Split(' ')[0].ToLower() == "run") // run file.pink
                 {
                     string fileName = input.Split(' ')[1].Trim();
+
                     if (File.Exists(fileName))
                     {
                         Run(fileName);
@@ -56,14 +60,17 @@ namespace PinkertonInterpreter
                     var lineNum = 1;
 
                     Console.ForegroundColor = ConsoleColor.White;
+
                     foreach (var line in lines)
                     {
                         Console.ForegroundColor = ConsoleColor.Green;
                         Console.Write($"{lineNum}.\t");
                         Console.ResetColor();
                         Console.WriteLine($"{line}");
+
                         lineNum++;
                     }
+
                     Console.ResetColor();
                 }
                 if (input?.ToLower() == "list")
@@ -103,9 +110,7 @@ namespace PinkertonInterpreter
         {
             Scanner scanner = new Scanner(content);
             List<Token> tokens = scanner.ScanTokens();
-
             Parser parser = new Parser(tokens);
-
             List<Statement> statements = parser.Parse();
 
             if (statements == null || statements.Count == 0)
@@ -113,6 +118,7 @@ namespace PinkertonInterpreter
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("Parsing failed.");
                 Console.ResetColor();
+
                 return;
             }
 
@@ -135,6 +141,7 @@ namespace PinkertonInterpreter
         public static void Error(Token token, string message)
         {
             Console.ForegroundColor = ConsoleColor.Red;
+
             if (token.Type == TokenType.EOF)
             {
                 report(token.Line, " at end", message);
@@ -143,6 +150,7 @@ namespace PinkertonInterpreter
             {
                 report(token.Line, " at '" + token.Lexeme + "'", message);
             }
+
             Console.ResetColor();
         }
 
@@ -172,6 +180,7 @@ namespace PinkertonInterpreter
                 if (input?.ToLower() == "clear")
                 {
                     Console.Clear();
+
                     continue;
                 }
 

@@ -5,5 +5,4 @@
         int Arity(); // сколько аргументов
         object? Call(Interpreter interpreter, List<object?> arguments);
     }
-
 }

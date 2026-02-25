@@ -3,18 +3,19 @@ using Interpreter.Grammar.Statements;
 using PinkertonInterpreter.Grammar;
 using PinkertonInterpreter.Grammar.Expressions;
 using PinkertonInterpreter.Grammar.Statements;
-using System;
 
 namespace PinkertonInterpreter
 {
     internal class Interpreter
     {
-        public static Environment Globals = new();      // глобальные переменные
-        private Environment _environment = Globals;     // текущая область видимости
+        public static Environment Globals = new();      // global variables and functions
+        private Environment _environment = Globals;     // current environment (can be global or local)
 
         public Interpreter()
         {
             _environment = Globals;
+
+            // Define built-in functions and constants
 
             Globals.Define("Pi", Math.PI);
 
@@ -160,13 +161,43 @@ namespace PinkertonInterpreter
                     return null;
                 }));
 
+            Globals.Define("sorted",
+                new NativeFunction(1, args =>
+                {
+                    var list = (args[0] as List<object>);
+                    var sortedList = new List<object>(list);
+                    
+                    sortedList.Sort();
+
+                    return sortedList;
+                }));
+
+            Globals.Define("reverse",
+                new NativeFunction(1, args =>
+                {
+                    (args[0] as List<object>).Reverse();
+
+                    return null;
+                }));
+
+            Globals.Define("reversed",
+                new NativeFunction(1, args =>
+                {
+                    var list = (args[0] as List<object>);
+                    var reversedList = new List<object>(list);
+                    
+                    reversedList.Reverse();
+
+                    return reversedList;
+                }));
+
             Globals.Define("join",
                 new NativeFunction(2, args =>
                 {
                     var list = args[0] as List<object>;
                     var separator = Convert.ToString(args[1]);
                     return '[' + string.Join(separator + ' ', list) + ']';
-                })); 
+                }));
 
             Globals.Define("readLine",
                 new NativeFunction(0, args => Console.ReadLine()));
@@ -185,8 +216,49 @@ namespace PinkertonInterpreter
                     }
                     return null;
                 }));
+
+            Globals.Define("map",
+                new NativeFunction(2, args =>
+                {
+                    var list = args[0] as List<object>;
+                    var func = args[1] as ICallable;
+                    var result = new List<object>();
+
+                    foreach (var item in list)
+                    {
+                        result.Add(func.Call(this, new List<object> { item }));
+                    }
+                    
+                    return result;
+                }));
+
+            Globals.Define("filter",
+                new NativeFunction(2, args =>
+                {
+                    var list = args[0] as List<object>;
+                    var predicate = args[1] as ICallable;
+                    var result = new List<object>();
+
+                    foreach (var item in list)
+                    {
+                        if (Convert.ToBoolean(predicate.Call(this, new List<object> { item })))
+                        {
+                            result.Add(item);
+                        }
+                    }
+
+                    return result;
+                }));
+
+            Globals.Define("indexOf",
+                new NativeFunction(2, args =>
+                {
+                    var list = args[0] as List<object>;
+                    var item = args[1];
+                    return list.IndexOf(item);
+                }));
         }
-        
+
         public object? Evaluate(Expression expr) => expr switch
         {
             Literal(var value) => value,
@@ -225,7 +297,7 @@ namespace PinkertonInterpreter
         private object? GetByIndex(Expression target, Expression index)
         {
             var array = Evaluate(target) as List<object?>
-        ?? throw new Exception("Target is not an array");
+                ?? throw new Exception("Target is not an array");
 
             if (index is RangeExpression range)
             {
@@ -235,20 +307,24 @@ namespace PinkertonInterpreter
                 foreach (var idx in rangeList)
                 {
                     var j = Convert.ToInt32(idx);
+
                     if (j < 0 || j >= array.Count)
                         throw new Exception("Index out of bounds");
+                    
                     result.Add(array[j]);
                 }
+
                 return result;
             }
 
             var i = Convert.ToInt32(Evaluate(index));
+
             return array[i];
         }
 
         private object EvaluateRange(Expression left, Expression right, Expression? step)
         {
-            // 'a'..'z' или 1..10
+            // 'a'..'z' or 1..10
 
             var leftValue = Evaluate(left);
             var rightValue = Evaluate(right);
@@ -258,7 +334,6 @@ namespace PinkertonInterpreter
                 var startC = (int)cl;
                 var endC = (int)cr;
                 var s = step != null ? Convert.ToInt32(Evaluate(step)) : 1;
-
                 var listChar = new List<object>();
 
                 if (startC <= endC)
@@ -278,7 +353,6 @@ namespace PinkertonInterpreter
             var start = Convert.ToDouble(leftValue);
             var end = Convert.ToDouble(rightValue);
             var stepValue = step != null ? Convert.ToDouble(Evaluate(step)) : 1.0;
-
             var list = new List<object>();
 
             if (stepValue == 0)
@@ -324,7 +398,6 @@ namespace PinkertonInterpreter
             }
         }
 
-        // Новый метод для Statement
         public object? Execute(Statement stmt) => stmt switch
         {
             PrintStatement(var p) => Print(p),
@@ -373,7 +446,7 @@ namespace PinkertonInterpreter
             }
             finally
             {
-                _environment = previous; // возвращаем старую область после блока
+                _environment = previous; // return to previous environment after block execution
             }
 
             return null;
@@ -391,21 +464,10 @@ namespace PinkertonInterpreter
         private object? PrintLn(Expression p)
         {
             var value = Evaluate(p);
+
             Console.WriteLine(value);
+            
             return null;
-        }
-
-        private object? Input(Token name)
-        {
-            var input = Console.ReadLine();
-
-            if (input == null)
-                throw new Exception("Input error");
-
-            // пока просто строка
-            _environment.Assign(name.Lexeme, input);
-
-            return input;
         }
 
         private object? WhileLoop(Expression condition, Statement body)
@@ -418,11 +480,11 @@ namespace PinkertonInterpreter
                 }
                 catch (BreakException)
                 {
-                    break; // ВАЖНО
+                    break; // Let's exit the loop immediately
                 }
                 catch (ContinueException)
                 {
-                    continue; // ВАЖНО
+                    continue; // Let's continue to the next iteration
                 }
             }
             return null;
@@ -431,6 +493,7 @@ namespace PinkertonInterpreter
         private object? ForLoop(Statement initializer, Expression condition, Expression increment, Statement body)
         {
             Execute(initializer);
+
             while (IsTruthy(Evaluate(condition)))
             {
                 try
@@ -439,14 +502,16 @@ namespace PinkertonInterpreter
                 }
                 catch (BreakException)
                 {
-                    break; // ВАЖНО
+                    break; // Let's exit the loop immediately
                 }
                 catch (ContinueException)
                 {
-                    // Выполняем инкремент и продолжаем цикл
+                    // Let's execute the increment and continue the loop
                 }
+            
                 Evaluate(increment);
             }
+
             return null;
         }
 
@@ -470,21 +535,27 @@ namespace PinkertonInterpreter
         private object? Function(FunctionStatement stmt, Token token)
         {
             var function = new Function(stmt, _environment);
+
             _environment.Define(token.Lexeme, function);
+
             return null;
         }
 
         private object? Assignment(Token name, Expression value)
         {
             var evaluatedValue = Evaluate(value);
+
             _environment.Assign(name.Lexeme, evaluatedValue);
+            
             return evaluatedValue;
         }
 
         private object? DefineVariable(Token name, Expression? initializer)
         {
             var value = initializer != null ? Evaluate(initializer) : null;
+
             _environment.Define(name.Lexeme, value);
+            
             return null;
         }
 
@@ -538,7 +609,9 @@ namespace PinkertonInterpreter
             if (a is List<object> listA && b is List<object> listB)
             {
                 var result = new List<object>(listA);
+
                 result.AddRange(listB);
+                
                 return result;
             }
             throw new Exception("Operands must be two numbers or strings");

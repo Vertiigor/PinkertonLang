@@ -4,7 +4,6 @@ using PinkertonInterpreter.Exceptions;
 using PinkertonInterpreter.Grammar;
 using PinkertonInterpreter.Grammar.Expressions;
 using PinkertonInterpreter.Grammar.Statements;
-using System.Linq.Expressions;
 using Expression = PinkertonInterpreter.Grammar.Expression;
 
 namespace PinkertonInterpreter
@@ -13,7 +12,6 @@ namespace PinkertonInterpreter
     {
         private readonly List<Token> _tokens;
         private int _current = 0;
-
         private Token Peek => _tokens[_current];
         private bool IsAtEnd => Peek.Type == TokenType.EOF;
         private Token Previous => _tokens[_current - 1];
@@ -26,6 +24,7 @@ namespace PinkertonInterpreter
         public List<Statement> Parse()
         {
             List<Statement> statements = new List<Statement>();
+
             while (!IsAtEnd)
             {
                 try
@@ -37,6 +36,7 @@ namespace PinkertonInterpreter
                     Synchronize();
                 }
             }
+
             return statements;
         }
 
@@ -73,7 +73,7 @@ namespace PinkertonInterpreter
                 statements.Add(ParseStatement());
             }
 
-            Consume(TokenType.RIGHT_BRACE, "Expect 'END' after block.");
+            Consume(TokenType.RIGHT_BRACE, "Expect 'end' after block.");
 
             return new BlockStatement(statements);
         }
@@ -81,30 +81,30 @@ namespace PinkertonInterpreter
         private Statement IfStatement()
         {
             Expression condition = Expression();
-            
-            Consume(TokenType.THEN, "Expect 'THEN' after if condition.");
-            
+
+            Consume(TokenType.THEN, "Expect 'then' after if condition.");
+
             Statement thenBranch = ParseStatement();
             Statement? elseBranch = null;
-            
+
             if (Match(TokenType.ELSE))
             {
                 elseBranch = ParseStatement();
-            
+
             }
+
             return new IfStatement(condition, thenBranch, elseBranch);
         }
 
         private Expression SelectExpression()
         {
-            Consume(TokenType.IF, "Expect 'IF' before the condition.");
+            Consume(TokenType.IF, "Expect 'if' before the condition.");
 
             Expression condition = Expression();
-
-            Consume(TokenType.THEN, "Expect 'THEN' after if condition.");
+            Consume(TokenType.THEN, "Expect 'then' after if condition.");
+            
             Expression thenBranch = Expression();
-
-            Consume(TokenType.ELSE, "Expect 'ELSE' after the condition.");
+            Consume(TokenType.ELSE, "Expect 'else' after the condition.");
 
             Expression elseBranch = Expression();
 
@@ -114,8 +114,7 @@ namespace PinkertonInterpreter
         private Statement WhileStatement()
         {
             Expression condition = Expression();
-
-            Consume(TokenType.DO, "Expect 'DO' after while condition.");
+            Consume(TokenType.DO, "Expect 'do' after while condition.");
 
             Statement body = ParseStatement();
 
@@ -138,13 +137,16 @@ namespace PinkertonInterpreter
             {
                 initializer = ExpressionStatement();
             }
+
             Expression? condition = null;
+            
             if (!Check(TokenType.SEMICOLON))
             {
                 condition = Expression();
             }
 
             Expression? increment = null;
+            
             if (!Check(TokenType.RIGHT_PAREN))
             {
                 increment = Expression();
@@ -182,55 +184,62 @@ namespace PinkertonInterpreter
         private Statement ExpressionStatement()
         {
             Expression expr = Assignment();
+
             return new ExpressionStatement(expr);
         }
 
-
         private Statement VariableStatement()
         {
-            // 1. Имя переменной
+            // Variable declaration syntax:
             Token name = Consume(TokenType.IDENTIFIER, "Expect variable name.");
 
-            // 2. Опциональный тип через 'as'
-            Token? typeToken = null;
-            if (Match(TokenType.AS))
-            {
-                // Проверяем несколько вариантов типов вручную
-                if (Check(TokenType.INT)) typeToken = Advance();
-                else if (Check(TokenType.DOUBLE_KW)) typeToken = Advance();
-                else if (Check(TokenType.FLOAT_KW)) typeToken = Advance();
-                else if (Check(TokenType.STRING_KW)) typeToken = Advance();
-                else if (Check(TokenType.BOOL_KW)) typeToken = Advance();
-                else throw Error(Peek, "Expect type after 'as'.");
-            }
-
-            // 3. Опциональное присваивание через 'is'
+            // Optional initializer with ':='
             Expression? initializer = null;
-            if (Match(TokenType.EQUAL)) // твой 'is'
+
+            if (Match(TokenType.EQUAL))
             {
                 initializer = Expression();
             }
 
-            // 4. Обязательный конец с ';'
-
-            return new VariableStatement(name, initializer /*, typeToken*/);
+            return new VariableStatement(name, initializer);
         }
 
         private Expression Assignment()
         {
-            Expression expr = Equality(); // или Expression() предыдущего уровня
+            Expression expr = Pipeline();
 
-            if (Match(TokenType.EQUAL)) // твой 'is'
+            if (Match(TokenType.EQUAL))
             {
                 Token equals = Previous;
-                Expression value = Assignment(); // рекурсивно для цепочек
+                Expression value = Assignment();
 
                 if (expr is VariableExpression varExpr)
-                {
                     return new AssignmentExpression(varExpr.Name, value);
-                }
 
                 throw Error(equals, "Invalid assignment target.");
+            }
+
+            return expr;
+        }
+
+        private Expression Pipeline()
+        {
+            Expression expr = Not(); // Start with the next level down (Not)
+
+            while (Match(TokenType.PIPE))
+            {
+                Token pipeToken = Previous;
+                Expression right = Not();
+
+                if (right is CallExpression call)
+                {
+                    call.Arguments.Insert(0, expr);
+                    expr = call;
+                }
+                else
+                {
+                    throw Error(pipeToken, "Right side of |> must be a function call.");
+                }
             }
 
             return expr;
@@ -249,7 +258,9 @@ namespace PinkertonInterpreter
                 else if (Match(TokenType.LEFT_BRACKET))
                 {
                     var index = Expression();
+
                     Consume(TokenType.RIGHT_BRACKET, "Expect ']' after index.");
+                    
                     expr = new Grammar.Expressions.IndexExpression(expr, index);
                 }
                 else
@@ -273,12 +284,14 @@ namespace PinkertonInterpreter
                     {
                         Program.Error(Peek, "Can't have more than 255 arguments.");
                     }
+
                     arguments.Add(Expression());
                 }
                 while (Match(TokenType.COMMA));
             }
 
             Token paren = Consume(TokenType.RIGHT_PAREN, "Expect ')' after arguments.");
+
             return new CallExpression(callee, paren, arguments);
         }
 
@@ -289,6 +302,7 @@ namespace PinkertonInterpreter
             Consume(TokenType.LEFT_PAREN, "Expect '(' after function name.");
 
             var parameters = new List<Token>();
+
             if (!Check(TokenType.RIGHT_PAREN))
             {
                 do
@@ -313,7 +327,7 @@ namespace PinkertonInterpreter
                 return new FunctionStatement(name, parameters, body2);
             }
 
-            Consume(TokenType.LEFT_BRACE, "Expect 'BEGIN' before function body.");
+            Consume(TokenType.LEFT_BRACE, "Expect 'begin' before function body.");
 
             var body = ((BlockStatement)BlockStatement()).Statements;
 
@@ -334,13 +348,13 @@ namespace PinkertonInterpreter
             }
 
             Consume(TokenType.RIGHT_BRACKET, "Expect ']' after array literal.");
+
             return new ArrayLiteral(elements);
         }
 
-
         private Expression Expression()
         {
-            return Not();
+            return Assignment();
         }
 
         private Expression Not()
@@ -363,6 +377,7 @@ namespace PinkertonInterpreter
 
             while (Match(TokenType.OR))
                 expr = new Binary(expr, Previous, Equality());
+
             return expr;
         }
 
@@ -372,6 +387,7 @@ namespace PinkertonInterpreter
 
             while (Match(TokenType.AND))
                 expr = new Binary(expr, Previous, Or());
+
             return expr;
         }
 
@@ -382,6 +398,7 @@ namespace PinkertonInterpreter
             if (Match(TokenType.IN))
             {
                 Expression right = Equality();
+
                 return new Grammar.Expressions.InExpression(expr, right);
             }
 
@@ -412,18 +429,21 @@ namespace PinkertonInterpreter
                 Expression right = Term();
                 expr = new Binary(expr, operatorToken, right);
             }
+
             return expr;
         }
 
         private Expression Concat()
         {
             Expression expr = Range();
+
             while (Match(TokenType.CONCAT))
             {
                 Token operatorToken = Previous;
                 Expression right = Range();
                 expr = new Binary(expr, operatorToken, right);
             }
+
             return expr;
         }
 
@@ -485,9 +505,8 @@ namespace PinkertonInterpreter
                 return new Unary(operatorToken, right);
             }
 
-            return Call(); // ← ВАЖНО
+            return Call(); // Call() is the next level down, which handles function calls and array indexing
         }
-
 
         private Expression Primary()
         {
@@ -498,26 +517,21 @@ namespace PinkertonInterpreter
             if (Match(TokenType.NUMBER, TokenType.STRING, TokenType.CHAR))
                 return new Literal(Previous.Literal);
 
-
             if (Match(TokenType.IDENTIFIER))
                 return new VariableExpression(Previous);
 
             if (Match(TokenType.LEFT_PAREN))
             {
                 Expression expr = Expression();
+
                 Consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
+                
                 return new Grouping(expr);
             }
 
-            if (Match(TokenType.LEFT_BRACKET))
-            {
-                return ArrayLiteral();
-            }
+            if (Match(TokenType.LEFT_BRACKET)) return ArrayLiteral();
 
-            if (Match(TokenType.SELECT))
-            {
-                return SelectExpression();
-            }
+            if (Match(TokenType.SELECT)) return SelectExpression();
 
             throw new Exception($"Unexpected token: {Peek.Type}");
         }
@@ -531,7 +545,7 @@ namespace PinkertonInterpreter
                 // Lookahead token
                 var type = Peek.Type;
 
-                // These are considered "sync points" — likely starts of new statements
+                // These are considered "sync points" - likely starts of new statements
                 if (type == TokenType.VAR ||
                     type == TokenType.FUNCTION ||
                     type == TokenType.PROCEDURE ||
@@ -546,7 +560,6 @@ namespace PinkertonInterpreter
                 Advance(); // Skip token and keep scanning
             }
         }
-
 
         private Token Consume(TokenType type, string message)
         {
@@ -583,7 +596,7 @@ namespace PinkertonInterpreter
         private Token Advance()
         {
             if (!IsAtEnd) _current++;
-            
+
             return Previous;
         }
 
