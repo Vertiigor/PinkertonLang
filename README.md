@@ -27,7 +27,7 @@ let result :=
     |> map(powTwo)
     |> sorted()
 
-writeln result
+writeln join(result, ';')
 ```
 
 ---
@@ -166,7 +166,7 @@ else
 ```pinkerton
 while x > 0 do
 begin
-    println x
+    writeln x
     x := x - 1
 end
 ```
