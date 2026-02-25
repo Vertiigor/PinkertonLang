@@ -4,7 +4,7 @@
     {
         // Single-character tokens
         LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE, LEFT_BRACKET, RIGHT_BRACKET,
-        COMMA, DOT, MINUS, PLUS, SEMICOLON, SLASH, STAR, MOD,
+        COMMA, DOT, MINUS, PLUS, SEMICOLON, SLASH, STAR, MOD, CONCAT,
 
         // One or two character tokens
         BANG, AINTSO,
@@ -17,7 +17,7 @@
 
         // Keywords
         VAR, AS, INT, DOUBLE_KW, STRING_KW, FLOAT_KW, BOOL_KW,
-        IF, THEN, WHILE, FOR, FOREACH, ELSE, RANGE,
+        IF, THEN, WHILE, FOR, ELSE, RANGE,
         FUNCTION, CHAR_KW,
         NULL, AND, OR, TRUE, FALSE, NOT,
         ARRAY,

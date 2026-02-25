@@ -102,7 +102,7 @@ namespace PinkertonInterpreter
                 case ';': AddToken(TokenType.SEMICOLON); break;
                 case '*': AddToken(TokenType.STAR); break;
                 case '/': AddToken(TokenType.SLASH); break;
-                //case '%': AddToken(TokenType.MOD); break;
+                case '^': AddToken(TokenType.CONCAT); break;
                 case '$': SkipLine(); break; // Skip comments starting with $
                 case '\n': line++; break;
                 case '!':

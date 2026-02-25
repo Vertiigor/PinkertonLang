@@ -404,12 +404,24 @@ namespace PinkertonInterpreter
 
         private Expression Comparison()
         {
-            Expression expr = Range();
+            Expression expr = Concat();
 
             while (Match(TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL))
             {
                 Token operatorToken = Previous;
                 Expression right = Term();
+                expr = new Binary(expr, operatorToken, right);
+            }
+            return expr;
+        }
+
+        private Expression Concat()
+        {
+            Expression expr = Range();
+            while (Match(TokenType.CONCAT))
+            {
+                Token operatorToken = Previous;
+                Expression right = Range();
                 expr = new Binary(expr, operatorToken, right);
             }
             return expr;
@@ -422,7 +434,7 @@ namespace PinkertonInterpreter
             if (Match(TokenType.RANGE)) // '..'
             {
                 Token operatorToken = Previous;
-                Expression right = Comparison();
+                Expression right = Term();
                 Expression? step = null;
 
                 if (Match(TokenType.STEP))

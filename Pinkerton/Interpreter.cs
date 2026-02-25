@@ -173,6 +173,18 @@ namespace PinkertonInterpreter
 
             Globals.Define("read",
                 new NativeFunction(0, args => Console.Read()));
+
+            Globals.Define("foreach",
+                new NativeFunction(2, args =>
+                {
+                    var list = args[0] as List<object>;
+                    var action = args[1] as ICallable;
+                    foreach (var item in list)
+                    {
+                        action.Call(this, new List<object> { item });
+                    }
+                    return null;
+                }));
         }
         
         public object? Evaluate(Expression expr) => expr switch
@@ -190,6 +202,8 @@ namespace PinkertonInterpreter
             ArrayLiteral(var elements) =>
                 elements.Select(Evaluate).ToList(),
 
+            RangeExpression(var left, var right, var step) => EvaluateRange(left, right, step),
+
             IndexExpression(var target, var index) => GetByIndex(target, index),
 
             SelectExpression(var con, var thenEx, var elseEx) => Select(con, thenEx, elseEx),
@@ -202,8 +216,6 @@ namespace PinkertonInterpreter
                 TokenType.OR => IsTruthy(Evaluate(left)) ? true : Evaluate(right),
                 _ => EvaluateBinary(Evaluate(left), op, Evaluate(right))
             },
-
-            RangeExpression(var left, var right, var step) => EvaluateRange(left, right, step),
 
             InExpression(var left, var right) => EvaluateIn(Evaluate(left), Evaluate(right)),
 
@@ -236,8 +248,35 @@ namespace PinkertonInterpreter
 
         private object EvaluateRange(Expression left, Expression right, Expression? step)
         {
-            var start = Convert.ToDouble(Evaluate(left));
-            var end = Convert.ToDouble(Evaluate(right));
+            // 'a'..'z' или 1..10
+
+            var leftValue = Evaluate(left);
+            var rightValue = Evaluate(right);
+
+            if (leftValue is char cl && rightValue is char cr)
+            {
+                var startC = (int)cl;
+                var endC = (int)cr;
+                var s = step != null ? Convert.ToInt32(Evaluate(step)) : 1;
+
+                var listChar = new List<object>();
+
+                if (startC <= endC)
+                {
+                    for (int i = startC; i <= endC; i += s)
+                        listChar.Add((char)i);
+                }
+                else
+                {
+                    for (int i = startC; i >= endC; i -= s)
+                        listChar.Add((char)i);
+                }
+
+                return listChar;
+            }
+
+            var start = Convert.ToDouble(leftValue);
+            var end = Convert.ToDouble(rightValue);
             var stepValue = step != null ? Convert.ToDouble(Evaluate(step)) : 1.0;
 
             var list = new List<object>();
@@ -474,6 +513,7 @@ namespace PinkertonInterpreter
                 TokenType.LESS => (double)left < (double)right,
                 TokenType.GREATER_EQUAL => (double)left >= (double)right,
                 TokenType.LESS_EQUAL => (double)left <= (double)right,
+                TokenType.CONCAT => Add(left, right),
                 _ => throw new Exception($"Unknown binary operator: {op.Type}")
             };
         }
@@ -495,6 +535,12 @@ namespace PinkertonInterpreter
             if (a is string sa && b is string sb) return sa + sb;
             if (a is string s && b != null) return s + b.ToString();
             if (a != null && b is string s2) return a.ToString() + s2;
+            if (a is List<object> listA && b is List<object> listB)
+            {
+                var result = new List<object>(listA);
+                result.AddRange(listB);
+                return result;
+            }
             throw new Exception("Operands must be two numbers or strings");
         }
     }
