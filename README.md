@@ -220,19 +220,21 @@ Pinkerton> run File.pink
 
 ```pinkerton
 function isPrime(n)
-{
+begin
     if n < 2 then return false
 
     let i := 2
+
     while i * i <= n do
-    {
+    begin
         if n mod i = 0 then
             return false
+
         i := i + 1
-    }
+    end
 
     return true
-}
+end
 
 let primes :=
     2..100
